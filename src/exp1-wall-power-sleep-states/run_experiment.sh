@@ -31,8 +31,15 @@ stop_measurements () {
 report_measurements () {
     
 
-    cat $2/"ilo_all_"$3"_"$4"_.out" | 
+    cat $2/"ilo_all_"$3"_"$4"_.out" | grep ""
     
+}
+
+store_config () {
+    
+echo "$1 $2 $3 $4 pdu iLO" > $4/"machine_configuration.out"
+
+
 }
 
 main () {
@@ -77,19 +84,7 @@ main () {
     done
 
 
-    store_config 
-
-
-
+    store_config $BENCHMARK $RUNS $EXEC_TIME $RESULT_DIR
 }
-
-
-
-
-
-
-
-
-
 
 "$@"
