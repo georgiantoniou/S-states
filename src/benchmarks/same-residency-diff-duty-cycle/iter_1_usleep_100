@@ -1,0 +1,19 @@
+./usleepbench: Terminated
+
+ Performance counter stats for './usleepbench 100':
+
+            112.83 msec task-clock                #    0.021 CPUs utilized          
+            34,101      context-switches          #    0.302 M/sec                  
+                 0      cpu-migrations            #    0.000 K/sec                  
+               117      page-faults               #    0.001 M/sec                  
+       152,374,397      cycles                    #    1.350 GHz                    
+       172,241,292      instructions              #    1.13  insn per cycle         
+        36,483,518      branches                  #  323.354 M/sec                  
+           899,759      branch-misses             #    2.47% of all branches        
+
+       5.358706728 seconds time elapsed
+
+       0.019293000 seconds user
+       0.194866000 seconds sys
+
+

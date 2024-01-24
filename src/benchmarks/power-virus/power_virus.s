@@ -126,9 +126,9 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 	mov %rdx,88(%rsp)
 
 
-        sub $1,%rcx #remove this and below comment for fixed iterations
-        cmp $0, %rcx
-        jne     .L2
+        #sub $1,%rcx #remove this and below comment for fixed iterations
+        #cmp $0, %rcx
+        jmp     .L2
 
          #leave
         .cfi_restore 5

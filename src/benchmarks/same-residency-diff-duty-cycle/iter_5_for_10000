@@ -1,0 +1,18 @@
+
+ Performance counter stats for './forbench 10000':
+
+              0.39 msec task-clock                #    0.542 CPUs utilized          
+                 0      context-switches          #    0.000 K/sec                  
+                 0      cpu-migrations            #    0.000 K/sec                  
+               117      page-faults               #    0.303 M/sec                  
+           804,894      cycles                    #    2.086 GHz                    
+           532,008      instructions              #    0.66  insn per cycle         
+           105,860      branches                  #  274.416 M/sec                  
+             3,643      branch-misses             #    3.44% of all branches        
+
+       0.000711677 seconds time elapsed
+
+       0.000796000 seconds user
+       0.000000000 seconds sys
+
+

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ###########################################################################################
 # This script only takes measurements, it does not change the configuration of the machine.
 # It accepts as parameters the benchmark-executioncommand (idle if idle needed), the number of runs, 
@@ -7,8 +7,16 @@
 #############################################################################################
 
 
-###shasta details###
-
+###machine details###
+USERNAME=""
+PASSWD=""
+HOST=""
+USERILO=""
+PASSWDILO=""
+HOSTILO=""
+USERPDU=""
+PASSWDPDU=""
+HOSTPDU=""
 ###################
 
 ##################################################
@@ -18,32 +26,21 @@
 # argument 3: Number of iteration
 ##################################################
 start_measurements () {
-    
-    if [[ -d $1 ]]; then
-        echo "***ERROR: RESULT_DIR already exists***"
-        exit
-    else
-        mkdir $1
-    fi
-
+        
     python3 ../measurements/pdu.py $USERPDU $PASSWDPDU $HOSTPDU $2 &> $1/"pdu_"$3"_"$2".out" &
-    pdu_pid=`echo "$!"`
-    return $pdu_pid
+
 }
 
 ##################################################
 # Stop PDU measurements. Collect the last 20
 # minutes iLO power measurements
-# argument 1: PDU Process ID
-# argument 2: Result Directory
-# argument 3: Number of iteration
-# argument 4: Execution Time
+# argument 1: Result Directory
+# argument 2: Number of iteration
+# argument 3: Execution Time
 ##################################################
 stop_measurements () {
    
-    kill -9 $1
-
-    python3 ../measurements/iLO_power.py $USERILO $PASSWDILO $HOSTILO &> $2/"ilo_all_"$3"_"$4".out"
+    python3 ../measurements/iLO_power.py $USERILO $PASSWDILO $HOSTILO &> $1/"ilo_all_"$2"_"$3".out"
     
 }
 
@@ -54,74 +51,110 @@ stop_measurements () {
 # argument 2: Number of iteration
 # argument 3: Execution Time
 ##################################################
-
 report_measurements () {
+
     etime=$3
 
     ((lines = etime/10*19))
     sed -n '/PowerDetail/,$p' $1/"ilo_all_"$2"_"$3".out" | head -n-3 | grep -v "PowerDetail" | tail -$lines &> $1/"ilo_part_"$2"_"$3".out"
-    
+    cat $1/"ilo_part_"$2"_"$3".out" | grep -e Peak | tr -d "\"" | tr -d " " | tr -d "," | tr ":" "," &> $1/"ilo_peak_"$2"_"$3".out"
+    cat $1/"ilo_part_"$2"_"$3".out" | grep -e Minimum | tr -d "\"" | tr -d " " | tr -d "," | tr ":" "," &> $1/"ilo_minimum_"$2"_"$3".out"
+    cat $1/"ilo_part_"$2"_"$3".out" | grep -e Average | tr -d "\"" | tr -d " " | tr -d "," | tr ":" "," &> $1/"ilo_average_"$2"_"$3".out"
+    cat $1/"ilo_part_"$2"_"$3".out" | grep -e CpuWatts | tr -d "\"" | tr -d " " | tr -d "," | tr ":" "," &> $1/"ilo_cpuwatts_"$2"_"$3".out"
+    cat $1/"ilo_part_"$2"_"$3".out" | grep -e DimmWatts | tr -d "\"" | tr -d " " | tr -d "," | tr ":" "," &> $1/"ilo_dimmwatts_"$2"_"$3".out"
+    cat $1/"ilo_part_"$2"_"$3".out" | grep -e AmbTemp | tr -d "\"" | tr -d " " | tr -d "," | tr ":" "," &> $1/"ilo_ambtemp_"$2"_"$3".out"
+
 }
 
+##################################################
+# Report Details about the configuration of the 
+# current experiment
+# argument 1: Benchmark
+# argument 2: Number of Iteration
+# argument 3: Execution Time
+# argument 4: Result Directory
+##################################################
 store_config () {
     
-echo "$1 $2 $3 $4 pdu iLO" > $4/"machine_configuration.out"
-echo "$USERNAME $PASSWD $HOST $USERILO $PASSWDILO $HOSTILO $USERPDU $PASSWDPDU $HOSTPDU" >> $4/"machine_configuration.out"
+    if [[ -d $4 ]]; then
+        echo "***ERROR: RESULT_DIR already exists***"
+        exit
+    else
+        mkdir $4
+    fi
 
+    echo "Start: `date`" > $4"/experiment_configuration.out"
+    #echo "$1 $2 $3 $4 pdu iLO" >> $4"/experiment_configuration.out"
+    echo "$1 $2 $3 $4 iLO" >> $4"/experiment_configuration.out"
+    echo "$USERNAME $PASSWD $HOST $USERILO $PASSWDILO $HOSTILO $USERPDU $PASSWDPDU $HOSTPDU" >> $4/"experiment_configuration.out"
+
+}
+
+##################################################
+# Report the end time of the experiment
+# argument 1: Result Directory
+##################################################
+report_end_of_experiment () {
+
+    echo "End: `date` >> $1/experiment_configuration.out"
+    
+    echo "End: `date`" >> $1"/experiment_configuration.out"
+    exit
 }
 
 main () {
 
-    if [[ -z $1 || -z $2 || -z $3 || -z $4 ]]; then
+    if [[ -z "$1" || -z "$2" || -z "$3" || -z "$4" || -z "$5" || -z "$6" || -z "$7" ]]; then
 
         echo "***ERROR: Wrong Arguments***"
-        echo "***SYNTAX: ./run_experiment main benchmark #runs executiontime resultdir"
+        echo "***SYNTAX: ./run_experiment main benchmarkname #runs executiontime resultdir machine conf runcommand"
         exit;   
     fi 
 
     benchmark=$1
     runs=$2
     exec_time=$3
-    result_dir=$4
+    run_command=$7
 
-    echo "$1 $2 $3 $4"
-    exit
-
-    if [[ "$BENCHMARK" == "idle" ]]; then
-        BENCHMARK=" &"
-    
-    else
-        BENCHMARK=$BENCHMARK" &"
+    #make root result dir if not exist
+    if [[ ! -d $4 ]]; then
+        mkdir $4
     fi
-    
-    for (( i=1 ; i<=$RUNS ; i++ )); 
+
+    result_dir=$4"/"$5"_"$6"_"$1
+    store_config $benchmark $runs $exec_time $result_dir
+     
+    for (( i=1 ; i<=$runs ; i++ )); 
     do
+        
         #start taking measurements
+        
         start_measurements $result_dir $exec_time $i
-        pids=`echo "$?"`
 
         #execute benchmark
-        if [[ "$benchmark" != "idle" ]]; then
+        if [ "$benchmark" != "idle" ]; then
 
-            bench_pid=`sshpass -p '$PASSWD' ssh $USERNAME@$HOST "$benchmark; echo "$!""` 
-        fi
+            ./run_benchmark.sh start_benchmarks $run_command 1 
         
-        sleep $EXEC_TIME
+        fi
 
+        sleep $exec_time
+
+        #stop benchmark
         if [[ "$benchmark" != "idle" ]]; then
-            sshpass -p '$PASSWD' ssh $USERNAME@$HOST "kill -9 $bench_pid"
+            
+            ./run_benchmark.sh stop_benchmarks $run_command
+
         fi
 
         #stop taking measurements
-        stop_measurements $pids $RESULT_DIR $i $EXEC_TIME $PASSILO
-
-        #report measurements
-        report_measurements $RESULT_DIR $i $EXEC_TIME
-
+        echo "stop_measurements $result_dir $i $exec_time"
+        stop_measurements $result_dir $i $exec_time
+        
+        # #report measurements
+        report_measurements $result_dir $i $exec_time
     done
-
-
-    store_config $BENCHMARK $RUNS $EXEC_TIME $RESULT_DIR
+    
+    report_end_of_experiment $result_dir
 }
-
 "$@"
