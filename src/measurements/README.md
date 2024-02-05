@@ -49,6 +49,7 @@ This script fetches the power measurements generated from iLo console. It fetche
 prerequisites: 
 ```
 pip install python-ilorest-library
+pip install redfish-client
 ```
 run commands:
 ``` 
